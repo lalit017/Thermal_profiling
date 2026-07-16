@@ -1,0 +1,13 @@
+# Ignore build artifacts
+*.o
+*.elf
+*.hex
+*.map
+*.eep
+*.lss
+*.sym
+
+# Ignore IDE specific folders
+.vs/
+.settings/
+*.log
