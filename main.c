@@ -24,7 +24,7 @@ volatile uint8_t request_flag = 0;
 int main(void)
 {
     /* Replace with your application code */
-	//ADC_init(); 
+	ADC_init(); 
 	USART0_init(9600);
 	timer_init(); // Implementing a 10ms timer
 	sei();  // Enable Global interrupt
@@ -39,8 +39,8 @@ int main(void)
 		if((current_time - previous_sensor_time) >= 10){
 			previous_sensor_time = current_time;
 			for(uint8_t sensor = 0; sensor < NUM_SENSORS; sensor++){
-				// read_sensor(current_cycle, sensor);
-				read_dummy_sensor(current_cycle, sensor);
+				read_sensor(current_cycle, sensor);
+				//read_dummy_sensor(current_cycle, sensor);
 			}
 			current_cycle++;
 			if(current_cycle >= HISTORY_SIZE) current_cycle = 0;

@@ -7,6 +7,7 @@ extern volatile uint8_t rxBuffer[MODBUS_FRAME_SIZE];
 extern volatile uint8_t rxIndex;
 extern volatile uint8_t request_flag;
 extern volatile uint8_t SensorError[NUM_SENSORS];
+static uint8_t txResponseBuffer[32];
 
 static void transmit_single_sensor(uint8_t sensor_index);
 
@@ -26,19 +27,47 @@ uint16_t calculate_modbus_crc(volatile uint8_t *buffer, uint8_t length) {
 	return crc;
 }
 
-static uint8_t txResponseBuffer[32];
+static void transmit_execption(uint8_t function_code, uint8_t execption_code){
+	txResponseBuffer[0] = MY_SLAVE_ID;
+	txResponseBuffer[1] = function_code | 0x80;
+	txResponseBuffer[2] = execption_code;
+	
+	uint8_t crc = calculate_modbus_crc(txResponseBuffer, 3);
+	txResponseBuffer[3] = (uint8_t)(crc & 0xFF);
+	txResponseBuffer[4] = (uint8_t)(crc >> 8);
+	
+	PORTD |= (1 << TXC0);
+	while(!(UCSR0A & (1 << TXC0)));
+	PORTD &= !(1 << PD2);
+}
 
 void check_master_request(){
 	uint8_t frame_length = rxIndex;
 	request_flag = 0;
 	rxIndex = 0;
 	if(frame_length < 4) return;
-	if(rxBuffer[0] == MY_SLAVE_ID && rxBuffer[1] == 0x04){
+	
+	if(rxBuffer[0] == MY_SLAVE_ID){
+		
+		if(rxBuffer[1] != 0x04){
+			transmit_execption(rxBuffer[1], 0x01); // Illegal function
+			return;
+		}
+		
 		uint16_t received_crc = ((uint16_t)rxBuffer[frame_length - 1] << 8) | rxBuffer[frame_length - 2];
 		uint16_t calculated_crc = calculate_modbus_crc(rxBuffer, frame_length - 2);
-		if (calculated_crc != received_crc) return;
+		if (calculated_crc != received_crc){
+			transmit_execption(rxBuffer[1], 0x03); // Illegal Data value
+			return;
+		}
 		uint8_t targetSensor = rxBuffer[3];
 		uint8_t quantity     = rxBuffer[5];
+		
+		if(targetSensor >= NUM_SENSORS || (targetSensor + quantity > NUM_SENSORS)){
+			transmit_execption(rxBuffer[1], 0x02); // Illegal Data address
+			return;
+		}
+		
 		if (quantity == 1) {
             if (targetSensor < NUM_SENSORS) transmit_single_sensor(targetSensor);
         }
