@@ -1,6 +1,7 @@
 #include "modBus.h"
 #include "config.h"
 #include "usart.h"
+#include "fan.h"
 
 extern volatile int16_t SUM[NUM_SENSORS];
 extern volatile uint8_t rxBuffer[MODBUS_FRAME_SIZE];
@@ -38,7 +39,7 @@ static void transmit_execption(uint8_t function_code, uint8_t execption_code){
 	
 	PORTD |= (1 << TXC0);
 	while(!(UCSR0A & (1 << TXC0)));
-	PORTD &= !(1 << PD2);
+	PORTD &= ~(1 << PD2);
 }
 
 void check_master_request(){
@@ -49,29 +50,43 @@ void check_master_request(){
 	
 	if(rxBuffer[0] == MY_SLAVE_ID){
 		
-		if(rxBuffer[1] != 0x04){
-			transmit_execption(rxBuffer[1], 0x01); // Illegal function
-			return;
-		}
-		
 		uint16_t received_crc = ((uint16_t)rxBuffer[frame_length - 1] << 8) | rxBuffer[frame_length - 2];
 		uint16_t calculated_crc = calculate_modbus_crc(rxBuffer, frame_length - 2);
 		if (calculated_crc != received_crc){
 			transmit_execption(rxBuffer[1], 0x03); // Illegal Data value
 			return;
 		}
-		uint8_t targetSensor = rxBuffer[3];
-		uint8_t quantity     = rxBuffer[5];
-		
-		if(targetSensor >= NUM_SENSORS || (targetSensor + quantity > NUM_SENSORS)){
-			transmit_execption(rxBuffer[1], 0x02); // Illegal Data address
-			return;
+		if(rxBuffer[1] == 0x04){
+			uint8_t targetSensor = rxBuffer[3];
+			uint8_t quantity     = rxBuffer[5];
+			
+			if(targetSensor >= NUM_SENSORS || (targetSensor + quantity > NUM_SENSORS)){
+				transmit_execption(rxBuffer[1], 0x02); // Illegal Data address
+				return;
+			}
+			
+			if (quantity == 1) {
+				if (targetSensor < NUM_SENSORS) transmit_single_sensor(targetSensor);
+			}
+			else transmit_package();
 		}
-		
-		if (quantity == 1) {
-            if (targetSensor < NUM_SENSORS) transmit_single_sensor(targetSensor);
-        }
-		else transmit_package(); 
+		else if(rxBuffer[1] == 0x06){
+			uint16_t register_address = (rxBuffer[2] << 8) | rxBuffer[3];
+			uint16_t register_value = (rxBuffer[4] << 8) | rxBuffer[5];
+			
+			if(register_address == FAN_PWM_REG_ADDR){
+				
+				fan_set_speed(register_value);
+				
+				PORTD |= (1 << PD2);
+				for(uint16_t i = 0; i < frame_length; i++) USART0_send_byte(rxBuffer[i]);
+				UCSR0A |= (1 << TXC0);
+				while(!(UCSR0A & (1 << TXC0)));
+				PORTD &= ~(1 << PD2); 
+			}
+			else transmit_execption(rxBuffer[1], 0x02); // Illegal data address
+		}
+		else transmit_execption(rxBuffer[1], 0x01); // Illegal function 
 	}
 }
 

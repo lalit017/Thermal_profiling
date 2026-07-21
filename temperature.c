@@ -6,7 +6,8 @@ extern volatile int16_t Data[NUM_SENSORS][HISTORY_SIZE];
 extern volatile int16_t SUM[NUM_SENSORS];
 extern volatile uint8_t SensorError[NUM_SENSORS];
 
-#define R_FIXED 1300UL
+#define R_FIXED 1350UL
+
 
 void read_sensor(uint8_t cycle, uint8_t sensor) {
 	uint16_t rawADC = get_ADC_value(sensor);
@@ -18,7 +19,7 @@ void read_sensor(uint8_t cycle, uint8_t sensor) {
 	}
 	SensorError[sensor] = 0; // Marks sensor as healthy
 	
-	uint32_t pt_resistance = ((uint32_t)rawADC * R_FIXED) / (1024UL - rawADC);
+	uint32_t pt_resistance = ((uint32_t)rawADC * R_FIXED) / (1023UL - rawADC);
 	
 	int32_t temp_calc = ((int32_t)pt_resistance - 1000L) * 1000L / 385L;
 

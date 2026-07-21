@@ -6,6 +6,8 @@ adc.c
 
 dummyTemp.c
 
+fan.c
+
 main.c
 
 modBus.c

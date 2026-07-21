@@ -12,6 +12,8 @@
 #include "modBus.h"
 #include <avr/wdt.h>
 #include "dummyTemp.h"
+#include <stdint.h>
+#include "fan.h"
 
 volatile int16_t Data[NUM_SENSORS][HISTORY_SIZE] = {0};  // Buffer to store last readings of each sensor 
 uint8_t current_cycle = 0; // Keep count of which cycle it is 
@@ -27,9 +29,10 @@ int main(void)
 	ADC_init(); 
 	USART0_init(9600);
 	timer_init(); // Implementing a 10ms timer
+	fan_init();
 	sei();  // Enable Global interrupt
 	
-	wdt_enable(WDTO_2S);
+	//wdt_enable(WDTO_2S);
 
 	uint32_t previous_sensor_time = 0; // Keep track of sensor is called previously
 	
