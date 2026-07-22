@@ -37,7 +37,9 @@ static void transmit_execption(uint8_t function_code, uint8_t execption_code){
 	txResponseBuffer[3] = (uint8_t)(crc & 0xFF);
 	txResponseBuffer[4] = (uint8_t)(crc >> 8);
 	
-	PORTD |= (1 << TXC0);
+	PORTD |= (1 << PD2);
+	for(uint8_t i = 0; i < 5; i++) USART0_send_byte(txResponseBuffer[i]);
+	UCSR0A |= (1 << TXC0);
 	while(!(UCSR0A & (1 << TXC0)));
 	PORTD &= ~(1 << PD2);
 }
@@ -57,8 +59,8 @@ void check_master_request(){
 			return;
 		}
 		if(rxBuffer[1] == 0x04){
-			uint8_t targetSensor = rxBuffer[3];
-			uint8_t quantity     = rxBuffer[5];
+			uint8_t targetSensor = (rxBuffer[2] << 8) | rxBuffer[3];
+			uint8_t quantity     = (rxBuffer[4] << 8) | rxBuffer[5];
 			
 			if(targetSensor >= NUM_SENSORS || (targetSensor + quantity > NUM_SENSORS)){
 				transmit_execption(rxBuffer[1], 0x02); // Illegal Data address
@@ -76,6 +78,11 @@ void check_master_request(){
 			
 			if(register_address == FAN_PWM_REG_ADDR){
 				
+				if(register_value > 100 || register_value < 0){
+					transmit_execption(rxBuffer[1], 0x03);
+					return;
+				}
+				
 				fan_set_speed(register_value);
 				
 				PORTD |= (1 << PD2);
@@ -83,6 +90,26 @@ void check_master_request(){
 				UCSR0A |= (1 << TXC0);
 				while(!(UCSR0A & (1 << TXC0)));
 				PORTD &= ~(1 << PD2); 
+			}
+			else transmit_execption(rxBuffer[1], 0x02); // Illegal data address
+		}
+		else if(rxBuffer[1] == 0x03){
+			uint16_t register_address = (rxBuffer[2] << 8) | rxBuffer[3];
+			
+			if(register_address == FAN_PWM_REG_ADDR){
+				uint16_t speed = get_fan_speed();
+				
+				txResponseBuffer[0] = MY_SLAVE_ID;
+				txResponseBuffer[1] = 0x03;
+				txResponseBuffer[2] = 0x02;
+				txResponseBuffer[3] = (speed >> 8) & 0xFF;
+				txResponseBuffer[4] = speed & 0xFF;
+				
+				uint16_t crc = calculate_modbus_crc(txResponseBuffer, 5);
+				txResponseBuffer[5] = crc & 0xFF;
+				txResponseBuffer[6] = (crc >> 8) & 0xFF;
+				
+				transmit_package();
 			}
 			else transmit_execption(rxBuffer[1], 0x02); // Illegal data address
 		}

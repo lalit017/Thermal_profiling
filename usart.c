@@ -22,6 +22,9 @@ void USART0_send_byte(uint8_t data) {
 	UDR0 = data;
 }
 
+void USART0_send_string(const char* str){
+	while(*str) USART0_send_byte(*str++);
+}
 
 ISR(USART0_RX_vect){
 	uint8_t receivedByte = UDR0;
