@@ -109,7 +109,13 @@ void check_master_request(){
 				txResponseBuffer[5] = crc & 0xFF;
 				txResponseBuffer[6] = (crc >> 8) & 0xFF;
 				
-				transmit_package();
+				PORTD |= (1 << PD2);
+				for(uint8_t i = 0; i < 7; i++) {
+					USART0_send_byte(txResponseBuffer[i]);
+				}
+				UCSR0A |= (1 << TXC0);
+				while(!(UCSR0A & (1 << TXC0)));
+				PORTD &= ~(1 << PD2);
 			}
 			else transmit_execption(rxBuffer[1], 0x02); // Illegal data address
 		}

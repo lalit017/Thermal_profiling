@@ -7,11 +7,11 @@ extern volatile uint8_t rx_timeout_counter;
 extern volatile uint8_t request_flag;
 
 void timer_init(void) {
-	TCCR1A = 0;
-	TCCR1B = (1 << WGM12);
-	OCR1A = 2499;
-	TIMSK1 = (1 << OCIE1A);
-	TCCR1B |= (1 << CS11) | (1 << CS10);
+	TCCR3A = 0;
+	TCCR3B = (1 << WGM32);
+	OCR3A = 2499;
+	TIMSK3 = (1 << OCIE3A);
+	TCCR3B |= (1 << CS31) | (1 << CS30);
 }
 
 	uint32_t timer_get_ticks(void) {
@@ -23,7 +23,7 @@ void timer_init(void) {
 		return ticks_copy;
 	}
 
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER3_COMPA_vect) {
 	sys_ticks++;
 	if(rx_timer_active){
 		rx_timeout_counter++;
