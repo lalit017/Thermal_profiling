@@ -48,3 +48,27 @@ void print_sensor_debug(uint8_t sensor){
 	while(!(UCSR0A & (1 << TXC0)));
 	PORTD &= ~(1 << PD2); 
 }
+
+void print_all_temperatures(){
+	char buffer[16];
+	
+	PORTD |= (1 << PD2);
+	
+	USART0_send_string("T :");
+	for(uint8_t i = 0; i < NUM_SENSORS; i++){
+		if(SensorError[i] == 0){
+			USART0_send_string("ERR ");
+		}
+		else{
+			int16_t avgTemp = SUM[i] / HISTORY_SIZE;
+			sprintf(buffer, "%d ", avgTemp);
+			USART0_send_string(buffer); 
+		}
+	}
+	USART0_send_string("\r\n");
+	
+	UCSR0A |= (1 << TXC0);
+	while(!(UCSR0A & (1 << TXC0)));
+	
+	PORTD &= ~(1 << PD2);
+}

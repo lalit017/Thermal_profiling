@@ -35,7 +35,7 @@ int main(void)
 	//wdt_enable(WDTO_2S);
 
 	uint32_t previous_sensor_time = 0; // Keep track of sensor is called previously
-	//uint32_t previous_debug_time = 0; 
+	uint32_t previous_debug_time = 0; 
 	
     while (1) 
     {
@@ -49,10 +49,10 @@ int main(void)
 			current_cycle++;
 			if(current_cycle >= HISTORY_SIZE) current_cycle = 0;
 		}
-		/*if(current_time - previous_debug_time >= 50){
+		if(current_time - previous_debug_time >= 50){
 			previous_debug_time = current_time;
-			print_sensor_debug(0);
-		}*/
+			print_all_temperatures();
+		}
 		if(request_flag == 1) check_master_request();
 		wdt_reset();
     }

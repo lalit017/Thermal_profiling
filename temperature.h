@@ -7,5 +7,6 @@
 
 void print_sensor_debug(uint8_t sensor);
 void read_sensor(uint8_t cycle, uint8_t sensor);
+void print_all_temperatures();
 
 #endif
