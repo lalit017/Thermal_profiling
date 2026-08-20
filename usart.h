@@ -5,4 +5,7 @@ void USART0_init(uint32_t baudrate);
 void USART0_send_byte(uint8_t data);
 void USART0_send_string(const char* str);
 
+void USART1_init(uint32_t baudrate);
+void USART1_send_string(const char* str);
+
 #endif

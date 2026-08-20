@@ -11,8 +11,12 @@ void USART0_init(uint32_t baudrate){
 	uint16_t ubrr_value = (F_CPU / (16UL * baudrate)) - 1;
 	UBRR0H = (uint8_t)(ubrr_value >> 8);
 	UBRR0L = (uint8_t)ubrr_value;
+	
+	UCSR0A = 0;
+	
 	UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+	
 	DDRD |= (1 << PD2); // Assuming PD2 is wired to DE and /RE pins
 	PORTD &= ~(1 << PD2); // Start in listening/Receiver mode
 }
@@ -36,5 +40,21 @@ ISR(USART0_RX_vect){
 	else{
 		rxIndex = 0;
 		rx_timer_active = 0;
+	}
+}
+
+void USART1_init(uint32_t baudrate){
+	uint16_t ubrr_value = (F_CPU / (16UL * baudrate)) - 1;
+	UBRR1H = (uint8_t)(ubrr_value >> 8);
+	UBRR1L = ubrr_value;
+	
+	UCSR1B = (1 << TXEN1);
+	UCSR1C = (1 << UCSZ11) | (1 << UCSZ10);
+}
+
+void USART1_send_string(const char* str){
+	while(*str){
+		while(!(UCSR1A & (1 << UDRE1)));
+		UDR1 =	*str++;
 	}
 }

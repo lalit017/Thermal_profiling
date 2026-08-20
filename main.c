@@ -25,7 +25,6 @@ volatile uint8_t request_flag = 0;
 
 int main(void)
 {
-    /* Replace with your application code */
 	ADC_init(); 
 	USART0_init(9600);
 	timer_init(); // Implementing a 10ms timer
@@ -49,12 +48,15 @@ int main(void)
 			current_cycle++;
 			if(current_cycle >= HISTORY_SIZE) current_cycle = 0;
 		}
-		if(current_time - previous_debug_time >= 50){
+		/*if(current_time - previous_debug_time >= 50){
 			previous_debug_time = current_time;
 			print_all_temperatures();
-		}
+		}*/
 		if(request_flag == 1) check_master_request();
 		wdt_reset();
     }
 }
+
+
+
 

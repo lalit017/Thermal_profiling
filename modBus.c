@@ -2,12 +2,17 @@
 #include "config.h"
 #include "usart.h"
 #include "fan.h"
+#include "usart.h"
+#include <util/delay.h>
 
 extern volatile int16_t SUM[NUM_SENSORS];
 extern volatile uint8_t rxBuffer[MODBUS_FRAME_SIZE];
 extern volatile uint8_t rxIndex;
 extern volatile uint8_t request_flag;
 extern volatile uint8_t SensorError[NUM_SENSORS];
+
+extern volatile uint8_t rx_timer_active;
+
 static uint8_t txResponseBuffer[32];
 
 static void transmit_single_sensor(uint8_t sensor_index);
@@ -42,6 +47,11 @@ static void transmit_execption(uint8_t function_code, uint8_t execption_code){
 	UCSR0A |= (1 << TXC0);
 	while(!(UCSR0A & (1 << TXC0)));
 	PORTD &= ~(1 << PD2);
+	
+	_delay_ms(2);
+	rxIndex = 0;
+	request_flag = 0;
+	rx_timer_active = 0;
 }
 
 void check_master_request(){
@@ -90,6 +100,7 @@ void check_master_request(){
 				UCSR0A |= (1 << TXC0);
 				while(!(UCSR0A & (1 << TXC0)));
 				PORTD &= ~(1 << PD2); 
+				 
 			}
 			else transmit_execption(rxBuffer[1], 0x02); // Illegal data address
 		}
@@ -116,6 +127,11 @@ void check_master_request(){
 				UCSR0A |= (1 << TXC0);
 				while(!(UCSR0A & (1 << TXC0)));
 				PORTD &= ~(1 << PD2);
+				
+				_delay_ms(2);
+				rxIndex = 0;
+				request_flag = 0;
+				rx_timer_active = 0;
 			}
 			else transmit_execption(rxBuffer[1], 0x02); // Illegal data address
 		}
@@ -151,7 +167,12 @@ static void transmit_single_sensor(uint8_t sensor_index) {
 
 	UCSR0A |= (1 << TXC0);
 	while (!(UCSR0A & (1 << TXC0)));
-	PORTD &= ~(1 << PD2); 
+	PORTD &= ~(1 << PD2);
+	
+	_delay_ms(2);
+	rxIndex = 0;
+	request_flag = 0;
+	rx_timer_active = 0; 
 }
 
 void transmit_package(){
@@ -176,6 +197,11 @@ void transmit_package(){
 	txResponseBuffer[txIndex++] = (uint8_t)(responseCrc & 0xFF);
 	txResponseBuffer[txIndex++] = (uint8_t)(responseCrc >> 8);
 	PORTD |= (1 << PD2);
+	
+	_delay_ms(2);
+	rxIndex = 0;
+	request_flag = 0;
+	rx_timer_active = 0;
 
 	for(uint8_t i = 0; i < txIndex; i++) {
 		USART0_send_byte(txResponseBuffer[i]);

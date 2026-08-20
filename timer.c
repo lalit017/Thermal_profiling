@@ -9,7 +9,7 @@ extern volatile uint8_t request_flag;
 void timer_init(void) {
 	TCCR3A = 0;
 	TCCR3B = (1 << WGM32);
-	OCR3A = 2499;
+	OCR3A = 1249;
 	TIMSK3 = (1 << OCIE3A);
 	TCCR3B |= (1 << CS31) | (1 << CS30);
 }

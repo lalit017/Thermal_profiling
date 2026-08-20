@@ -1,6 +1,8 @@
 #include "temperature.h"
 #include "config.h"
 #include "adc.h"
+#include "usart.h"
+#include <util/delay.h>
 
 extern volatile int16_t Data[NUM_SENSORS][HISTORY_SIZE];
 extern volatile int16_t SUM[NUM_SENSORS];
@@ -13,7 +15,7 @@ void read_sensor(uint8_t cycle, uint8_t sensor) {
 	uint16_t rawADC = get_ADC_value(sensor);
 	
 	// In case if the sensor is not working and giving garbage value or wire gets cuts
-	if(rawADC < 5 || rawADC > 1018){ 
+	if(rawADC < 5 || rawADC > 550){ 
 		SensorError[sensor] = 1; // Marks sensor as broken
 		return;
 	}
@@ -53,10 +55,11 @@ void print_all_temperatures(){
 	char buffer[16];
 	
 	PORTD |= (1 << PD2);
+	//_delay_ms(2);
 	
 	USART0_send_string("T :");
 	for(uint8_t i = 0; i < NUM_SENSORS; i++){
-		if(SensorError[i] == 0){
+		if(SensorError[i] == 1){
 			USART0_send_string("ERR ");
 		}
 		else{
@@ -70,5 +73,8 @@ void print_all_temperatures(){
 	UCSR0A |= (1 << TXC0);
 	while(!(UCSR0A & (1 << TXC0)));
 	
+	//_delay_ms(2);
+	
 	PORTD &= ~(1 << PD2);
+	USART1_send_string("F\r\n");
 }
